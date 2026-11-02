@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <!-- 1. Tối ưu Full màn hình & Chống tràn Dynamic Island / Tai thỏ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KPI PRO">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d0e12">
+
+  <title>KPI PRO - Hệ Thống Quản Lý Tổng Hợp</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Gắn trực tiếp Icon Nakroth Thứ Nguyên Vệ Thần Chibi bạn đã chọn -->
+  <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1yWk6-X7fA6oX_3rM654Y_7Z8YVbWlG0O=w512-h512">
+  <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1yWk6-X7fA6oX_3rM654Y_7Z8YVbWlG0O=w512-h512">
+  <link id="pwa-manifest" rel="manifest" href="">
+
+  <style>
+    /* Căn lề an toàn chuẩn iOS (Safe Area Inset) */
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+    }
+
+    body {
+      padding-top: var(--sat);
+      padding-bottom: var(--sab);
+      padding-left: var(--sal);
+      padding-right: var(--sar);
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      overscroll-behavior-y: none;
+    }
+
+    /* Ẩn thanh cuộn trên thanh menu mobile */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Hiệu ứng trượt mượt mà cho Dynamic Island Toast */
+    #dynamic-island-toast {
+      top: calc(var(--sat) + 10px);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Hiệu ứng mờ kính chuẩn iOS (Glassmorphism) */
+    .ios-glass {
+      background: rgba(20, 20, 25, 0.9);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-white h-screen w-screen flex flex-col overflow-hidden font-sans select-none">
+
+  <!-- THÔNG BÁO TRƯỢT DYNAMIC ISLAND (Thay thế alert mặc định) -->
+  <div id="dynamic-island-toast" class="fixed left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 -translate-y-12 scale-90 flex items-center gap-3 px-4 py-2.5 rounded-full bg-black/95 border border-slate-800 shadow-2xl shadow-fuchsia-500/10 min-w-[220px] max-w-[92vw]">
+    <div id="di-icon" class="w-6 h-6 rounded-full bg-fuchsia-500/20 border border-fuchsia-400/50 flex items-center justify-center text-fuchsia-400 text-xs shrink-0">
+      🔮
+    </div>
+    <span id="di-message" class="text-xs sm:text-sm font-semibold text-white truncate pr-2">Thông báo hệ thống</span>
+  </div>
+
+  <!-- HỘP THOẠI XÁC NHẬN CHUẨN iOS (Thay thế confirm mặc định) -->
+  <div id="ios-confirm-overlay" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 opacity-0 transition-opacity duration-200">
+    <div id="ios-confirm-box" class="ios-glass border border-white/10 rounded-2xl w-full max-w-[280px] text-center overflow-hidden shadow-2xl scale-95 transition-transform duration-200">
+      <div class="p-5">
+        <h3 id="ios-confirm-title" class="text-base font-bold text-white mb-1.5">Xác nhận thao tác</h3>
+        <p id="ios-confirm-desc" class="text-xs text-slate-300 leading-relaxed">Bạn có chắc chắn muốn thực hiện thao tác này?</p>
+      </div>
+      <div class="grid grid-cols-2 border-t border-white/10 divide-x divide-white/10 text-sm">
+        <button id="ios-confirm-cancel" class="py-3 font-medium text-slate-400 active:bg-white/10 transition">
+          Hủy
+        </button>
+        <button id="ios-confirm-ok" class="py-3 font-bold text-fuchsia-400 active:bg-white/10 transition">
+          Đồng ý
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- THANH ĐIỀU HƯỚNG TOPBAR -->
+  <header class="bg-slate-900/95 border-b border-slate-800 px-3 py-2 flex items-center justify-between gap-2 shadow-lg z-10 shrink-0">
+    
+    <!-- Logo & Các nút chuyển Tab -->
+    <div class="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar py-0.5">
+      <div class="flex items-center space-x-1.5 mr-1 sm:mr-3 px-1.5 shrink-0">
+        <span class="w-2.5 h-2.5 rounded-full bg-fuchsia-500 shadow-[0_0_8px_#d946ef] animate-pulse"></span>
+        <span class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 via-purple-400 to-blue-400 text-sm sm:text-base tracking-wider whitespace-nowrap uppercase">KPI PRO</span>
+      </div>
+
+      <button onclick="switchTab('tab1', this, 'Bảng KPI LongPro')" class="tab-btn px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-md shadow-blue-900/50 transition whitespace-nowrap flex items-center gap-1.5 shrink-0">
+        <span>📊</span> <span>LongPro</span>
+      </button>
+
+      <button onclick="switchTab('tab2', this, 'Quản Lý Date')" class="tab-btn px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition whitespace-nowrap flex items-center gap-1.5 shrink-0">
+        <span>📅</span> <span>Quản Lý Date</span>
+      </button>
+
+      <button onclick="switchTab('tab3', this, 'Kho Hàng')" class="tab-btn px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition whitespace-nowrap flex items-center gap-1.5 shrink-0">
+        <span>📦</span> <span>Kho Hàng</span>
+      </button>
+    </div>
+
+    <!-- Cụm nút tiện ích góc phải -->
+    <div class="flex items-center space-x-1.5 shrink-0">
+      <button onclick="handleReloadTab()" title="Làm mới bảng hiện tại" class="px-2.5 py-1.5 rounded-xl bg-slate-800 active:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition flex items-center gap-1">
+        <span>🔄</span> <span class="hidden md:inline">Làm mới</span>
+      </button>
+
+      <button onclick="handleOpenExternal()" class="px-2.5 py-1.5 rounded-xl bg-fuchsia-500/10 active:bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30 text-xs font-semibold transition flex items-center gap-1 whitespace-nowrap">
+        <span class="hidden sm:inline">Mở rời</span> <span>↗</span>
+      </button>
+    </div>
+
+  </header>
+
+  <!-- KHU VỰC HIỂN THỊ 3 WEB -->
+  <main class="flex-1 w-full relative bg-slate-950 overflow-hidden">
+    <iframe id="tab1" src="https://long17994-sketch.github.io/LongPro/" class="tab-frame w-full h-full border-0"></iframe>
+    <iframe id="tab2" src="https://long17994-sketch.github.io/date/" class="tab-frame w-full h-full border-0 hidden"></iframe>
+    <iframe id="tab3" src="https://long17994-sketch.github.io/khohang/" class="tab-frame w-full h-full border-0 hidden"></iframe>
+  </main>
+
+  <script>
+    /* =========================================================================
+       1. KHỞI TẠO WEB MANIFEST ĐỘNG CHO PWA (Để khi cài đặt lên iOS có icon Nakroth)
+       ========================================================================= */
+    (function initPWA() {
+      const iconUrl = "https://lh3.googleusercontent.com/d/1yWk6-X7fA6oX_3rM654Y_7Z8YVbWlG0O=w512-h512";
+      const manifestData = {
+        name: "KPI PRO - Quản Lý Tổng Hợp",
+        short_name: "KPI PRO",
+        display: "standalone",
+        background_color: "#0d0e12",
+        theme_color: "#0d0e12",
+        icons: [{ src: iconUrl, sizes: "512x512", type: "image/png" }]
+      };
+      const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+      document.getElementById('pwa-manifest').href = URL.createObjectURL(manifestBlob);
+    })();
+
+    /* =========================================================================
+       2. HỆ THỐNG THÔNG BÁO DYNAMIC ISLAND & CONFIRM CHUẨN iOS
+       ========================================================================= */
+    let toastTimer = null;
+
+    function showDynamicIsland(message, icon = '🔮') {
+      const toast = document.getElementById('dynamic-island-toast');
+      document.getElementById('di-message').textContent = message;
+      document.getElementById('di-icon').textContent = icon;
+
+      toast.classList.remove('opacity-0', '-translate-y-12', 'scale-90');
+      toast.classList.add('opacity-100', 'translate-y-0', 'scale-100');
+
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
+        toast.classList.add('opacity-0', '-translate-y-12', 'scale-90');
+      }, 2400);
+    }
+
+    function showIOSConfirm(message, title = 'Xác nhận thao tác') {
+      return new Promise((resolve) => {
+        const overlay = document.getElementById('ios-confirm-overlay');
+        const box = document.getElementById('ios-confirm-box');
+        document.getElementById('ios-confirm-title').textContent = title;
+        document.getElementById('ios-confirm-desc').textContent = message;
+
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        requestAnimationFrame(() => {
+          overlay.classList.remove('opacity-0');
+          box.classList.remove('scale-95');
+          box.classList.add('scale-100');
+        });
+
+        const closeDialog = (result) => {
+          overlay.classList.add('opacity-0');
+          box.classList.remove('scale-100');
+          box.classList.add('scale-95');
+          setTimeout(() => {
+            overlay.classList.remove('flex');
+            overlay.classList.add('hidden');
+            resolve(result);
+          }, 200);
+        };
+
+        document.getElementById('ios-confirm-cancel').onclick = () => closeDialog(false);
+        document.getElementById('ios-confirm-ok').onclick = () => closeDialog(true);
+      });
+    }
+
+    // Ghi đè hàm alert() mặc định trên trang chính
+    window.alert = function(msg) {
+      showDynamicIsland(String(msg), '🔔');
+    };
+
+    // Tự động can thiệp vào các iframe cùng tên miền để thay thế hộp thoại alert thô
+    document.querySelectorAll('.tab-frame').forEach(frame => {
+      frame.addEventListener('load', () => {
+        try {
+          if (frame.contentWindow) {
+            frame.contentWindow.alert = (msg) => showDynamicIsland(String(msg), '🔔');
+          }
+        } catch (e) {
+          // Bỏ qua nếu khác domain
+        }
+      });
+    });
+
+    /* =========================================================================
+       3. ĐIỀU KHIỂN CHUYỂN TAB & TIỆN ÍCH
+       ========================================================================= */
+    let currentTabId = 'tab1';
+    let currentTabName = 'Bảng KPI LongPro';
+
+    function switchTab(tabId, btn, tabName) {
+      if (currentTabId === tabId) return;
+      currentTabId = tabId;
+      currentTabName = tabName;
+
+      // Ẩn tất cả các khung web và chỉ hiển thị khung được chọn
+      document.querySelectorAll('.tab-frame').forEach(frame => frame.classList.add('hidden'));
+      document.getElementById(tabId).classList.remove('hidden');
+
+      // Đổi màu nút đang chọn
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-900/50');
+        b.classList.add('text-slate-400');
+      });
+      btn.classList.add('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-900/50');
+      btn.classList.remove('text-slate-400');
+
+      // Báo hiệu nhẹ trên Dynamic Island
+      showDynamicIsland(`Đã chuyển sang ${tabName}`, '✨');
+    }
+
+    async function handleReloadTab() {
+      const isConfirmed = await showIOSConfirm(
+        `Tải lại dữ liệu của "${currentTabName}"? Dữ liệu chưa lưu ở bảng này có thể bị đặt lại.`,
+        'Làm mới bảng hiện tại'
+      );
+      if (isConfirmed) {
+        const activeFrame = document.getElementById(currentTabId);
+        activeFrame.src = activeFrame.src;
+        showDynamicIsland(`Đang tải lại ${currentTabName}...`, '🔄');
+      }
+    }
+
+    async function handleOpenExternal() {
+      const activeFrame = document.getElementById(currentTabId);
+      window.open(activeFrame.src, '_blank');
+      showDynamicIsland(`Đã mở ${currentTabName} ở cửa sổ rời`, '↗');
+    }
+  </script>
+
+</body>
+</html>
